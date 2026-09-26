@@ -16,6 +16,7 @@ const MUSIC_APPS = ["spotify", "applemusic", "itunes", "tidal", "deezer", "fooba
 const BOWL_OFFSET = Vector2i(-2, -16)
 const STROKE_DISTANCE = 600.0
 const STROKE_WINDOW_SECONDS = 1.5
+const INSTANCE_PORT = 47835
 
 @onready var menu: CatMenu = $Menu
 @onready var tray: StatusIndicator = $Tray
@@ -40,9 +41,17 @@ var shown_position = Vector2i.ZERO
 var offscreen = false
 var stroke_distance = 0.0
 var stroke_started = 0.0
+var instance_lock = TCPServer.new()
 
 
 func _ready():
+	if instance_lock.listen(INSTANCE_PORT, "127.0.0.1") != OK:
+		set_process(false)
+		set_process_input(false)
+		move_offscreen()
+		await wake_running_cat()
+		get_tree().quit()
+		return
 	apply_skin()
 	apply_size()
 	move_to_random_spot()
@@ -59,6 +68,10 @@ func _ready():
 
 
 func _process(delta):
+	if instance_lock.is_connection_available():
+		instance_lock.take_connection()
+		if hidden_by_user:
+			toggle_hidden()
 	match state:
 		State.SIT:
 			sit_time_left -= delta
@@ -91,6 +104,16 @@ func _input(event):
 				sit()
 			else:
 				pet()
+
+
+func wake_running_cat():
+	var running_cat = StreamPeerTCP.new()
+	running_cat.connect_to_host("127.0.0.1", INSTANCE_PORT)
+	for attempt in 10:
+		running_cat.poll()
+		if running_cat.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+			return
+		await wait(0.05)
 
 
 func begin_activity(new_state):
