@@ -2,10 +2,11 @@ extends AnimatedSprite2D
 
 const FRAME_SIZE = 32
 const FRAMES_PER_SECOND = 8 # TODO: confirm animation speed
-const SHEETS = {
-	"idle": "res://assets/catpack/Idle.png",
-	"box": "res://assets/catpack/Box3.png",
-	"dracula": "res://assets/catpack/drculacat.png",
+const SPRITES = "res://assets/catpack/Sprites/"
+const ANIMATIONS = {
+	"idle": {"sheet": SPRITES + "Classical/Individual/Idle.png"},
+	"box": {"sheet": SPRITES + "Classical/Individual/Box3.png"},
+	"dracula": {"sheet": SPRITES + "Halloween/draculacats.png", "row": 10, "frames": 6},
 }
 
 var dragging = false
@@ -36,14 +37,19 @@ func _input(event):
 func build_sprite_frames():
 	var frames = SpriteFrames.new()
 	frames.remove_animation("default")
-	for animation_name in SHEETS:
-		var sheet = load(SHEETS[animation_name])
+	for animation_name in ANIMATIONS:
+		var settings = ANIMATIONS[animation_name]
+		var sheet = load(settings["sheet"])
+		var y = settings.get("row", 0) * FRAME_SIZE
+		var width = settings.get("frames", 0) * FRAME_SIZE
+		if width == 0:
+			width = sheet.get_width()
 		frames.add_animation(animation_name)
 		frames.set_animation_speed(animation_name, FRAMES_PER_SECOND)
-		for x in range(0, sheet.get_width(), FRAME_SIZE):
+		for x in range(0, width, FRAME_SIZE):
 			var frame = AtlasTexture.new()
 			frame.atlas = sheet
-			frame.region = Rect2(x, 0, FRAME_SIZE, FRAME_SIZE)
+			frame.region = Rect2(x, y, FRAME_SIZE, FRAME_SIZE)
 			frames.add_frame(animation_name, frame)
 	return frames
 
