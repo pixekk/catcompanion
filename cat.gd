@@ -14,6 +14,8 @@ const OFFSCREEN = Vector2i(-100000, -100000)
 const SIT_ANIMATIONS = ["idle", "idle2", "wait"]
 const MUSIC_APPS = ["spotify", "applemusic", "itunes", "tidal", "deezer", "foobar2000", "aimp", "musicbee", "vlc"]
 const BOWL_OFFSET = Vector2i(-2, -16)
+const STROKE_DISTANCE = 600.0
+const STROKE_WINDOW_SECONDS = 1.5
 
 @onready var menu: CatMenu = $Menu
 @onready var tray: StatusIndicator = $Tray
@@ -36,6 +38,8 @@ var hidden_by_user = false
 var music_focused = false
 var shown_position = Vector2i.ZERO
 var offscreen = false
+var stroke_distance = 0.0
+var stroke_started = 0.0
 
 
 func _ready():
@@ -71,6 +75,8 @@ func _input(event):
 		var moved = DisplayServer.mouse_get_position() - press_mouse_position
 		if moved.length() > DRAG_THRESHOLD:
 			start_drag()
+	elif event is InputEventMouseMotion and not mouse_down:
+		track_stroke(event.screen_relative.length())
 	if not event is InputEventMouseButton:
 		return
 	if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
@@ -96,7 +102,8 @@ func begin_activity(new_state):
 	if used_decoration:
 		var decoration = used_decoration
 		used_decoration = null
-		decoration.set_sleeper(null)
+		decoration.set_occupant(null)
+		decoration.set_playing(false)
 		decoration.visible = true
 		if offscreen:
 			place_beside(decoration.rect())
@@ -120,10 +127,16 @@ func choose_activity():
 	var options = [[teleport, 4], [loaf, 2], [nap, 2 if is_night() else 1]]
 	var bed = decorations.random_of_kind("bed")
 	if bed:
-		options.append([nap_in_bed.bind(bed), 3 if is_night() else 2])
+		options.append([rest_on.bind(bed, randf_range(60.0, 180.0)), 3 if is_night() else 2])
+	var perch = decorations.random_of_kind("perch")
+	if perch:
+		options.append([rest_on.bind(perch, randf_range(30.0, 90.0)), 2])
 	var bowl = decorations.random_of_kind("bowl")
 	if bowl:
 		options.append([eat_at_bowl.bind(bowl), 2])
+	var toy = decorations.random_of_kind("toy")
+	if toy:
+		options.append([play_with.bind(toy), 2])
 	var total = 0
 	for option in options:
 		total += option[1]
@@ -187,19 +200,61 @@ func wake_up():
 		sit()
 
 
-func nap_in_bed(bed):
+func rest_on(decoration, seconds):
 	var activity_id = begin_activity(State.BUSY)
-	await play_once("yawn")
-	if not is_current(activity_id):
-		return
+	if decoration.kind() == "bed":
+		await play_once("yawn")
+		if not is_current(activity_id):
+			return
 	await fade_to(0.0)
 	if not is_current(activity_id):
 		return
 	move_offscreen()
 	modulate.a = 1.0
-	used_decoration = bed
-	bed.set_sleeper(sprite_frames)
-	await wait(randf_range(60.0, 180.0))
+	used_decoration = decoration
+	decoration.set_occupant(sprite_frames)
+	await wait(seconds)
+	if is_current(activity_id):
+		sit()
+
+
+func play_with(toy):
+	var activity_id = begin_activity(State.BUSY)
+	await fade_to(0.0)
+	if not is_current(activity_id):
+		return
+	place_beside(toy.rect())
+	flip_h = true
+	await fade_to(1.0)
+	if not is_current(activity_id):
+		return
+	used_decoration = toy
+	toy.set_playing(true)
+	await play_once("excited")
+	if not is_current(activity_id):
+		return
+	play("dance")
+	await wait(randf_range(3.0, 6.0))
+	if is_current(activity_id):
+		sit()
+
+
+func track_stroke(distance):
+	if state != State.SIT:
+		return
+	var now = Time.get_ticks_msec() / 1000.0
+	if now - stroke_started > STROKE_WINDOW_SECONDS:
+		stroke_started = now
+		stroke_distance = 0.0
+	stroke_distance += distance
+	if stroke_distance >= STROKE_DISTANCE:
+		stroke_distance = 0.0
+		enjoy_stroke()
+
+
+func enjoy_stroke():
+	var activity_id = begin_activity(State.BUSY)
+	await play_once(Skins.stroke_reaction(Settings.skin))
 	if is_current(activity_id):
 		sit()
 

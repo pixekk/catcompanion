@@ -5,7 +5,9 @@ signal hide_toggled
 signal decoration_added(type)
 signal decorations_cleared
 
-enum Item { HIDE = 100, QUIT, CLEAR_DECORATIONS }
+enum Item { HIDE = 100, QUIT, CLEAR_DECORATIONS, STARTUP }
+
+const STARTUP_SHORTCUT = "Microsoft/Windows/Start Menu/Programs/Startup/Cat Companion.lnk"
 
 var cat_hidden = false
 var size_menu = PopupMenu.new()
@@ -28,8 +30,11 @@ func _ready():
 		skin_menu.add_radio_check_item(skin_name)
 	skin_menu.index_pressed.connect(func(index): Settings.update("skin", skin_menu.get_item_text(index)))
 
-	decoration_menu.add_separator("Add")
+	var group = ""
 	for type in Decoration.CATALOG:
+		if Decoration.CATALOG[type]["group"] != group:
+			group = Decoration.CATALOG[type]["group"]
+			decoration_menu.add_separator(group)
 		decoration_menu.add_item(Decoration.CATALOG[type]["label"])
 		decoration_menu.set_item_metadata(decoration_menu.item_count - 1, type)
 	decoration_menu.add_separator()
@@ -41,6 +46,8 @@ func _ready():
 	add_submenu_node_item("Customize", skin_menu)
 	add_submenu_node_item("Decorations", decoration_menu)
 	add_separator()
+	if OS.get_name() == "Windows":
+		add_check_item("Start with Windows", Item.STARTUP)
 	add_item("Hide cat", Item.HIDE)
 	add_item("Quit", Item.QUIT)
 	id_pressed.connect(on_id_pressed)
@@ -61,6 +68,8 @@ func refresh():
 	for index in skin_menu.item_count:
 		skin_menu.set_item_checked(index, skin_menu.get_item_text(index) == Settings.skin)
 	set_item_text(get_item_index(Item.HIDE), "Show cat" if cat_hidden else "Hide cat")
+	if get_item_index(Item.STARTUP) != -1:
+		set_item_checked(get_item_index(Item.STARTUP), FileAccess.file_exists(startup_shortcut_path()))
 
 
 func on_id_pressed(id):
@@ -69,6 +78,22 @@ func on_id_pressed(id):
 			hide_toggled.emit()
 		Item.QUIT:
 			get_tree().quit()
+		Item.STARTUP:
+			set_start_with_windows(not FileAccess.file_exists(startup_shortcut_path()))
+
+
+func startup_shortcut_path():
+	return OS.get_environment("APPDATA").path_join(STARTUP_SHORTCUT)
+
+
+func set_start_with_windows(enabled):
+	var shortcut_path = startup_shortcut_path()
+	if not enabled:
+		DirAccess.remove_absolute(shortcut_path)
+		return
+	var arguments = "" if OS.has_feature("template") else "--path \"%s\"" % ProjectSettings.globalize_path("res://")
+	var create_shortcut = "$shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut('%s'); $shortcut.TargetPath = '%s'; $shortcut.Arguments = '%s'; $shortcut.Save()"
+	OS.execute("powershell.exe", ["-NoProfile", "-Command", create_shortcut % [shortcut_path, OS.get_executable_path(), arguments]])
 
 
 func on_decoration_index_pressed(index):

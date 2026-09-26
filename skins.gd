@@ -18,13 +18,15 @@ const SHARED_ANIMATIONS = {
 	"sleep": [2, 4],
 	"dance": [3, 4],
 	"yawn": [4, 8],
+	"shy": [5, 12],
 	"loaf": [6, 12],
 	"box_rise": [9, 12],
+	"excited": [12, 12],
 	"eat": [13, 15],
 	"wait": [14, 6],
 }
-const PLAIN_REACTIONS = {"content": [15, 13], "blush": [17, 12], "annoyed": [16, 9]}
-const RIBBON_REACTIONS = {"shy": [5, 12], "excited": [12, 12], "annoyed": [7, 9]}
+const PLAIN_EXTRAS = {"content": [15, 13], "blush": [17, 12], "annoyed": [16, 9]}
+const RIBBON_EXTRAS = {"annoyed": [7, 9]}
 const LOOPING = ["idle", "idle2", "sleep", "dance", "loaf", "wait"]
 const SPEEDS = {"sleep": 3, "loaf": 5}
 
@@ -40,12 +42,12 @@ static func is_ribbon(skin):
 	return skin.begins_with("Ribbon ")
 
 
-static func reactions(skin):
-	return RIBBON_REACTIONS if is_ribbon(skin) else PLAIN_REACTIONS
-
-
 static func pet_reactions(skin):
-	return reactions(skin).keys().filter(func(animation_name): return animation_name != "annoyed")
+	return ["shy", "excited"] if is_ribbon(skin) else ["content", "blush", "shy"]
+
+
+static func stroke_reaction(skin):
+	return "shy" if is_ribbon(skin) else "content"
 
 
 static func sheet_path(skin):
@@ -56,7 +58,7 @@ static func sheet_path(skin):
 
 static func build_frames(skin):
 	var sheet = load(sheet_path(skin))
-	var layout = SHARED_ANIMATIONS.merged(reactions(skin))
+	var layout = SHARED_ANIMATIONS.merged(RIBBON_EXTRAS if is_ribbon(skin) else PLAIN_EXTRAS)
 	var frames = SpriteFrames.new()
 	frames.remove_animation("default")
 	for animation_name in layout:
