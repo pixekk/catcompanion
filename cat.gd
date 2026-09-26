@@ -37,8 +37,8 @@ const PLAIN_SKINS = {
 const RIBBON_COLORS = ["Red", "Pink", "Purple", "Blue", "Green", "Yellow", "Brown", "White"]
 const DEFAULT_SKIN = "Cream"
 
-const SIZES = {2: "Small", 3: "Medium", 4: "Large", 5: "Huge"}
-const DEFAULT_SIZE = 4
+const SIZES = {1: "Small", 2: "Medium", 3: "Large", 4: "Huge"}
+const DEFAULT_SIZE = 2
 const QUIT_ID = 100
 const SETTINGS_PATH = "user://settings.cfg"
 
@@ -261,6 +261,13 @@ func open_menu():
 	menu.content_scale_factor = 1.0
 	menu.min_size = Vector2i(menu.get_contents_minimum_size())
 	menu.size = menu.min_size
+	var cat_window = get_window()
+	var screen_area = DisplayServer.screen_get_usable_rect(screen)
+	var menu_x = cat_window.position.x + cat_window.size.x
+	if menu_x + menu.size.x > screen_area.end.x:
+		menu_x = cat_window.position.x - menu.size.x
+	var menu_y = cat_window.position.y + cat_window.size.y - menu.size.y
+	menu.position = Vector2i(menu_x, max(menu_y, screen_area.position.y))
 
 
 func on_size_chosen(size_option):
