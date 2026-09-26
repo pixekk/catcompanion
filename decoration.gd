@@ -52,6 +52,7 @@ func _init():
 	transparent_bg = true
 	unresizable = true
 	always_on_top = true
+	min_size = Vector2i.ONE
 
 
 func _ready():

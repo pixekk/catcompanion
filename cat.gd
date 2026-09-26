@@ -398,6 +398,7 @@ func apply_skin():
 
 
 func apply_size():
+	get_window().min_size = Vector2i.ONE
 	get_window().size = Vector2i(Skins.FRAME_SIZE, Skins.FRAME_SIZE) * Settings.size
 
 
