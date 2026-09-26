@@ -258,6 +258,9 @@ func open_menu():
 	for index in customize_menu.item_count:
 		customize_menu.set_item_checked(index, customize_menu.get_item_text(index) == skin)
 	menu.popup(Rect2i(DisplayServer.mouse_get_position(), Vector2i.ZERO))
+	menu.content_scale_factor = 1.0
+	menu.min_size = Vector2i(menu.get_contents_minimum_size())
+	menu.size = menu.min_size
 
 
 func on_size_chosen(size_option):
