@@ -1,7 +1,22 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://cat.gd" id="1"]
+[ext_resource type="Script" path="res://cat_menu.gd" id="2"]
+[ext_resource type="Script" path="res://decorations.gd" id="3"]
+[ext_resource type="Script" path="res://windows_helper.gd" id="4"]
 
 [node name="Cat" type="AnimatedSprite2D"]
 centered = false
 script = ExtResource("1")
+
+[node name="Menu" type="PopupMenu" parent="."]
+script = ExtResource("2")
+
+[node name="Tray" type="StatusIndicator" parent="."]
+tooltip = "Cat Companion"
+
+[node name="Decorations" type="Node" parent="."]
+script = ExtResource("3")
+
+[node name="WindowsHelper" type="Node" parent="."]
+script = ExtResource("4")
