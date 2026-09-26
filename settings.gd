@@ -3,7 +3,7 @@ extends Node
 signal changed(key)
 
 const PATH = "user://settings.cfg"
-const SIZES = {1: "Small", 2: "Medium", 3: "Large", 4: "Huge"}
+const SIZES = {1: "A Fine Boi", 2: "He Chonk", 3: "Hefty Chonk", 4: "OH LAWD, HE COMIN"}
 const DEFAULT_SIZE = 2
 
 var size = DEFAULT_SIZE
